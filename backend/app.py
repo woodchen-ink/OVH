@@ -4456,6 +4456,80 @@ def get_network_interfaces(service_name):
         
         return jsonify({"success": False, "error": error_msg}), 500
 
+@app.route('/api/server-control/<service_name>/mrtg', methods=['OPTIONS', 'GET'])
+def get_mrtg_data(service_name):
+    """获取MRTG流量监控数据（支持多网卡）"""
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+    
+    client = get_ovh_client()
+    if not client:
+        return jsonify({"success": False, "error": "未配置OVH API密钥"}), 401
+    
+    try:
+        # 获取查询参数
+        period = request.args.get('period', 'daily')  # hourly, daily, weekly, monthly, yearly
+        traffic_type = request.args.get('type', 'traffic:download')  # traffic:download, traffic:upload, etc.
+        
+        add_log("INFO", f"[MRTG] 获取流量数据: {service_name} - {period} - {traffic_type}", "server_control")
+        
+        # 先获取服务器的所有网卡
+        try:
+            mac_addresses = client.get(f'/dedicated/server/{service_name}/networkInterfaceController')
+        except Exception as e:
+            # 如果获取网卡失败，尝试使用旧的MRTG API（已弃用但仍可用）
+            add_log("WARN", f"[MRTG] 无法获取网卡列表，使用旧版API: {str(e)}", "server_control")
+            try:
+                data = client.get(f'/dedicated/server/{service_name}/mrtg', period=period, type=traffic_type)
+                return jsonify({
+                    "success": True,
+                    "data": data,
+                    "period": period,
+                    "type": traffic_type,
+                    "interfaces": []
+                })
+            except Exception as legacy_error:
+                raise Exception(f"新旧API均失败: {str(legacy_error)}")
+        
+        # 获取每个网卡的MRTG数据
+        all_data = []
+        for mac in mac_addresses:
+            try:
+                # 使用新版API（按网卡）
+                mrtg_data = client.get(
+                    f'/dedicated/server/{service_name}/networkInterfaceController/{mac}/mrtg',
+                    period=period,
+                    type=traffic_type
+                )
+                
+                all_data.append({
+                    'mac': mac,
+                    'data': mrtg_data
+                })
+                add_log("INFO", f"[MRTG] 获取网卡 {mac} 数据成功: {len(mrtg_data)} 个数据点", "server_control")
+            except Exception as e:
+                add_log("WARN", f"[MRTG] 获取网卡 {mac} 数据失败: {str(e)}", "server_control")
+                all_data.append({
+                    'mac': mac,
+                    'data': [],
+                    'error': str(e)
+                })
+        
+        add_log("INFO", f"[MRTG] 成功获取 {len(all_data)} 个网卡的流量数据", "server_control")
+        
+        return jsonify({
+            "success": True,
+            "interfaces": all_data,
+            "period": period,
+            "type": traffic_type,
+            "server": service_name
+        })
+        
+    except Exception as e:
+        error_msg = str(e)
+        add_log("ERROR", f"[MRTG] 获取流量数据失败: {service_name} - {error_msg}", "server_control")
+        return jsonify({"success": False, "error": error_msg}), 500
+
 @app.route('/api/server-control/<service_name>/ola/aggregation', methods=['OPTIONS', 'POST'])
 def configure_ola_aggregation(service_name):
     """OLA网络聚合: 将多个网络接口聚合以提升带宽（链路聚合/Link Aggregation）"""

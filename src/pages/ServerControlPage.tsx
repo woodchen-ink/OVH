@@ -3,8 +3,9 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/utils/apiClient";
 import { useToast } from "../components/ToastContainer";
-import { Server, RefreshCw, Power, HardDrive, X, AlertCircle, Activity, Cpu, Wifi, Calendar, Monitor, Mail } from "lucide-react";
+import { Server, RefreshCw, Power, HardDrive, X, AlertCircle, Activity, Cpu, Wifi, Calendar, Monitor, Mail, BarChart3 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface ServerInfo {
   serviceName: string;
@@ -151,6 +152,11 @@ const ServerControlPage: React.FC = () => {
   // 网络接口功能（物理网卡）
   const [networkInterfaces, setNetworkInterfaces] = useState<any[]>([]);
   const [loadingNetworkInterfaces, setLoadingNetworkInterfaces] = useState(false);
+
+  // MRTG流量监控功能
+  const [mrtgData, setMrtgData] = useState<any>(null);
+  const [loadingMrtg, setLoadingMrtg] = useState(false);
+  const [mrtgPeriod, setMrtgPeriod] = useState('daily');  // hourly, daily, weekly, monthly, yearly
 
   // Task 1: 获取服务器列表（只显示活跃服务器）
   const fetchServers = async () => {
@@ -841,6 +847,34 @@ const ServerControlPage: React.FC = () => {
     }
   };
 
+  // MRTG流量监控：获取流量数据（同时获取上传和下载）
+  const fetchMrtgData = async (serviceName: string, period?: string) => {
+    setLoadingMrtg(true);
+    try {
+      const currentPeriod = period || mrtgPeriod;
+      
+      // 同时获取上传和下载数据
+      const [downloadResponse, uploadResponse] = await Promise.all([
+        api.get(`/server-control/${serviceName}/mrtg?period=${currentPeriod}&type=traffic:download`),
+        api.get(`/server-control/${serviceName}/mrtg?period=${currentPeriod}&type=traffic:upload`)
+      ]);
+      
+      if (downloadResponse.data.success && uploadResponse.data.success) {
+        // 合并数据
+        setMrtgData({
+          period: currentPeriod,
+          download: downloadResponse.data,
+          upload: uploadResponse.data
+        });
+      }
+    } catch (error: any) {
+      console.error('获取MRTG数据失败:', error);
+      setMrtgData(null);
+    } finally {
+      setLoadingMrtg(false);
+    }
+  };
+
   // 硬件更换：提交请求
   const handleHardwareReplace = async () => {
     if (!selectedServer || !hardwareReplaceType) return;
@@ -919,8 +953,16 @@ const ServerControlPage: React.FC = () => {
       fetchInterventions(selectedServer.serviceName);
       fetchPlannedInterventions(selectedServer.serviceName);
       fetchNetworkInterfaces(selectedServer.serviceName);
+      fetchMrtgData(selectedServer.serviceName);  // 初始加载MRTG数据
     }
   }, [selectedServer]);
+
+  // MRTG: 当时间周期变化时重新加载数据
+  useEffect(() => {
+    if (selectedServer) {
+      fetchMrtgData(selectedServer.serviceName, mrtgPeriod);
+    }
+  }, [mrtgPeriod]);
 
   return (
     <div className="space-y-6">
@@ -1397,6 +1439,254 @@ const ServerControlPage: React.FC = () => {
                   <div className="text-center py-6">
                     <Wifi className="w-12 h-12 text-cyber-muted/30 mx-auto mb-2" />
                     <p className="text-cyber-muted text-sm">该服务器暂无网卡信息</p>
+                  </div>
+                )}
+              </div>
+
+              {/* MRTG流量监控图表 */}
+              <div className="cyber-card">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-cyan-400" />
+                    <h3 className="text-lg font-semibold text-cyber-text">流量监控</h3>
+                  </div>
+                  <button
+                    onClick={() => selectedServer && fetchMrtgData(selectedServer.serviceName)}
+                    className="p-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 transition-colors"
+                    disabled={loadingMrtg}
+                  >
+                    <RefreshCw className={`w-4 h-4 ${loadingMrtg ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+
+                {/* 时间周期选择器 */}
+                <div className="mb-4">
+                  <label className="block text-sm text-cyber-muted mb-2">时间周期</label>
+                  <select
+                    value={mrtgPeriod}
+                    onChange={(e) => {
+                      setMrtgPeriod(e.target.value);
+                      if (selectedServer) {
+                        fetchMrtgData(selectedServer.serviceName, e.target.value);
+                      }
+                    }}
+                    className="w-full bg-cyber-grid border border-cyber-border rounded-lg px-3 py-2 text-cyber-text focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value="hourly">每小时</option>
+                    <option value="daily">每天（默认）</option>
+                    <option value="weekly">每周</option>
+                    <option value="monthly">每月</option>
+                    <option value="yearly">每年</option>
+                  </select>
+                </div>
+
+                {/* 图表区域 */}
+                {loadingMrtg ? (
+                  <div className="flex items-center justify-center py-12">
+                    <RefreshCw className="w-8 h-8 animate-spin text-cyan-400" />
+                    <span className="ml-3 text-cyber-muted">加载中...</span>
+                  </div>
+                ) : mrtgData && mrtgData.download && mrtgData.upload ? (
+                  <div className="space-y-6">
+                    {mrtgData.download.interfaces.map((downloadIface: any, idx: number) => {
+                      const uploadIface = mrtgData.upload.interfaces.find((u: any) => u.mac === downloadIface.mac);
+                      if (!downloadIface.data || downloadIface.data.length === 0) return null;
+                      if (!uploadIface || !uploadIface.data || uploadIface.data.length === 0) return null;
+                      
+                      // 合并上传和下载数据到同一时间轴
+                      const chartData = downloadIface.data.map((downPoint: any, i: number) => {
+                        const upPoint = uploadIface.data[i];
+                        return {
+                          time: new Date(downPoint.timestamp * 1000).toLocaleString('zh-CN', {
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }),
+                          timestamp: downPoint.timestamp,
+                          download: downPoint.value?.value || 0,
+                          upload: upPoint?.value?.value || 0,
+                          unit: downPoint.value?.unit || 'bps'
+                        };
+                      });
+
+                      // 计算统计信息
+                      const downloadValues = chartData.map(d => d.download);
+                      const uploadValues = chartData.map(d => d.upload);
+                      
+                      const downloadAvg = downloadValues.reduce((a, b) => a + b, 0) / downloadValues.length;
+                      const uploadAvg = uploadValues.reduce((a, b) => a + b, 0) / uploadValues.length;
+                      const downloadMax = Math.max(...downloadValues);
+                      const uploadMax = Math.max(...uploadValues);
+                      const downloadCurrent = downloadValues[downloadValues.length - 1] || 0;
+                      const uploadCurrent = uploadValues[uploadValues.length - 1] || 0;
+                      
+                      // 格式化数值（bits/s -> Mbps/Gbps）
+                      const formatBandwidth = (bps: number) => {
+                        if (bps >= 1000000000) return `${(bps / 1000000000).toFixed(2)} Gbps`;
+                        if (bps >= 1000000) return `${(bps / 1000000).toFixed(2)} Mbps`;
+                        if (bps >= 1000) return `${(bps / 1000).toFixed(2)} Kbps`;
+                        return `${bps.toFixed(0)} bps`;
+                      };
+                      
+                      // 生成智能总结
+                      const generateSummary = () => {
+                        const totalAvg = downloadAvg + uploadAvg;
+                        const totalMax = downloadMax + uploadMax;
+                        const periodText = mrtgPeriod === 'hourly' ? '过去1小时' :
+                                         mrtgPeriod === 'daily' ? '过去24小时' :
+                                         mrtgPeriod === 'weekly' ? '过去7天' :
+                                         mrtgPeriod === 'monthly' ? '过去30天' : '过去1年';
+                        return `${periodText}，平均带宽 ${formatBandwidth(totalAvg)}（↓${formatBandwidth(downloadAvg)} ↑${formatBandwidth(uploadAvg)}），峰值 ${formatBandwidth(totalMax)}`;
+                      };
+
+                      return (
+                        <div key={idx} className="p-4 bg-cyan-500/5 border border-cyan-500/20 rounded-lg">
+                          {/* 网卡标题 */}
+                          <h4 className="text-sm font-semibold text-cyan-400 flex items-center gap-2 mb-3">
+                            <Wifi className="w-4 h-4" />
+                            网卡: <span className="font-mono">{downloadIface.mac}</span>
+                          </h4>
+                          
+                          {/* 智能总结 */}
+                          <div className="mb-4 p-3 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-lg">
+                            <div className="text-sm text-cyber-text font-medium">
+                              📊 {generateSummary()}
+                            </div>
+                          </div>
+                          
+                          {/* 统计卡片 - 上传和下载 */}
+                          <div className="grid grid-cols-2 gap-3 mb-4">
+                            {/* 下载统计 */}
+                            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                              <div className="text-xs text-green-400 font-semibold mb-2 flex items-center gap-1">
+                                <span>↓</span> 下载带宽
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 text-xs">
+                                <div>
+                                  <div className="text-cyber-muted/70 mb-1">当前</div>
+                                  <div className="text-green-300 font-semibold">{formatBandwidth(downloadCurrent)}</div>
+                                </div>
+                                <div>
+                                  <div className="text-cyber-muted/70 mb-1">平均</div>
+                                  <div className="text-green-400 font-bold">{formatBandwidth(downloadAvg)}</div>
+                                </div>
+                                <div>
+                                  <div className="text-cyber-muted/70 mb-1">峰值</div>
+                                  <div className="text-green-500 font-semibold">{formatBandwidth(downloadMax)}</div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* 上传统计 */}
+                            <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
+                              <div className="text-xs text-orange-400 font-semibold mb-2 flex items-center gap-1">
+                                <span>↑</span> 上传带宽
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 text-xs">
+                                <div>
+                                  <div className="text-cyber-muted/70 mb-1">当前</div>
+                                  <div className="text-orange-300 font-semibold">{formatBandwidth(uploadCurrent)}</div>
+                                </div>
+                                <div>
+                                  <div className="text-cyber-muted/70 mb-1">平均</div>
+                                  <div className="text-orange-400 font-bold">{formatBandwidth(uploadAvg)}</div>
+                                </div>
+                                <div>
+                                  <div className="text-cyber-muted/70 mb-1">峰值</div>
+                                  <div className="text-orange-500 font-semibold">{formatBandwidth(uploadMax)}</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* 图表区域 - 双线（上传+下载） */}
+                          <ResponsiveContainer width="100%" height={380}>
+                            <LineChart data={chartData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                              <XAxis 
+                                dataKey="time"
+                                stroke="#9CA3AF"
+                                style={{ fontSize: '10px' }}
+                                angle={-45}
+                                textAnchor="end"
+                                height={80}
+                              />
+                              <YAxis 
+                                stroke="#9CA3AF"
+                                style={{ fontSize: '11px' }}
+                                label={{ 
+                                  value: 'Mbps', 
+                                  angle: -90, 
+                                  position: 'insideLeft',
+                                  style: { fill: '#9CA3AF', fontSize: '12px' }
+                                }}
+                                tickFormatter={(value) => formatBandwidth(value).replace(/\s.*/, '')}
+                              />
+                              <Tooltip 
+                                contentStyle={{
+                                  backgroundColor: '#1F2937',
+                                  border: '1px solid #374151',
+                                  borderRadius: '8px',
+                                  color: '#E5E7EB',
+                                  padding: '12px'
+                                }}
+                                labelStyle={{ color: '#9CA3AF', marginBottom: '8px', fontWeight: 'bold' }}
+                                formatter={(value: any, name: string) => [
+                                  formatBandwidth(Number(value)), 
+                                  name === 'download' ? '↓ 下载' : '↑ 上传'
+                                ]}
+                              />
+                              <Legend 
+                                wrapperStyle={{
+                                  paddingTop: '15px'
+                                }}
+                                formatter={(value) => value === 'download' ? '↓ 下载带宽' : '↑ 上传带宽'}
+                              />
+                              {/* 下载线 - 绿色 */}
+                              <Line 
+                                type="monotone"
+                                dataKey="download"
+                                stroke="#10B981"
+                                strokeWidth={2.5}
+                                dot={false}
+                                name="download"
+                                animationDuration={800}
+                              />
+                              {/* 上传线 - 橙色 */}
+                              <Line 
+                                type="monotone"
+                                dataKey="upload"
+                                stroke="#F59E0B"
+                                strokeWidth={2.5}
+                                dot={false}
+                                name="upload"
+                                animationDuration={800}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                          
+                          {/* 底部信息 */}
+                          <div className="mt-4 pt-3 border-t border-cyan-500/20 text-center">
+                            <div className="text-xs text-cyber-muted/70">
+                              数据点: <span className="text-cyan-400 font-semibold">{chartData.length}</span> · 
+                              周期: <span className="text-cyan-400 font-semibold">{
+                                mrtgPeriod === 'hourly' ? '每小时' :
+                                mrtgPeriod === 'daily' ? '每天' :
+                                mrtgPeriod === 'weekly' ? '每周' :
+                                mrtgPeriod === 'monthly' ? '每月' : '每年'
+                              }</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <BarChart3 className="w-12 h-12 text-cyber-muted/30 mx-auto mb-2" />
+                    <p className="text-cyber-muted text-sm">暂无流量数据</p>
+                    <p className="text-cyber-muted/70 text-xs mt-1">请选择时间周期后查看</p>
                   </div>
                 )}
               </div>
