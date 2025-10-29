@@ -5581,6 +5581,157 @@ def manual_check_vps(plan_code):
             "message": "获取VPS数据中心信息失败"
         }), 500
 
+# ==================== OVH 账户管理 API ====================
+
+@app.route('/api/ovh/account/info', methods=['GET'])
+def get_account_info():
+    """获取OVH账户信息 - GET /me"""
+    client = get_ovh_client()
+    if not client:
+        return jsonify({"status": "error", "message": "未配置OVH API"}), 400
+    
+    try:
+        account_info = client.get('/me')
+        add_log("INFO", "成功获取账户信息", "account_management")
+        return jsonify({
+            "status": "success",
+            "data": account_info
+        })
+    except Exception as e:
+        add_log("ERROR", f"获取账户信息失败: {str(e)}", "account_management")
+        return jsonify({
+            "status": "error",
+            "message": f"获取账户信息失败: {str(e)}"
+        }), 500
+
+@app.route('/api/ovh/account/refunds', methods=['GET'])
+def get_account_refunds():
+    """获取退款列表 - GET /me/refund"""
+    client = get_ovh_client()
+    if not client:
+        return jsonify({"status": "error", "message": "未配置OVH API"}), 400
+    
+    try:
+        # 获取退款ID列表
+        refund_ids = client.get('/me/refund')
+        
+        # 获取每个退款的详细信息
+        refunds = []
+        for refund_id in refund_ids[:20]:  # 限制最多20个
+            try:
+                refund_detail = client.get(f'/me/refund/{refund_id}')
+                refunds.append(refund_detail)
+            except Exception as e:
+                add_log("WARNING", f"获取退款 {refund_id} 详情失败: {str(e)}", "account_management")
+        
+        add_log("INFO", f"成功获取 {len(refunds)} 条退款记录", "account_management")
+        return jsonify({
+            "status": "success",
+            "data": refunds
+        })
+    except Exception as e:
+        add_log("ERROR", f"获取退款列表失败: {str(e)}", "account_management")
+        return jsonify({
+            "status": "error",
+            "message": f"获取退款列表失败: {str(e)}"
+        }), 500
+
+@app.route('/api/ovh/account/credit-balance', methods=['GET'])
+def get_credit_balance():
+    """获取信用余额列表 - GET /me/credit/balance"""
+    client = get_ovh_client()
+    if not client:
+        return jsonify({"status": "error", "message": "未配置OVH API"}), 400
+    
+    try:
+        # 获取余额名称列表
+        balance_names = client.get('/me/credit/balance')
+        
+        # 获取每个余额的详细信息
+        balances = []
+        for balance_name in balance_names:
+            try:
+                balance_detail = client.get(f'/me/credit/balance/{balance_name}')
+                balances.append(balance_detail)
+            except Exception as e:
+                add_log("WARNING", f"获取余额 {balance_name} 详情失败: {str(e)}", "account_management")
+        
+        add_log("INFO", f"成功获取 {len(balances)} 个信用余额", "account_management")
+        return jsonify({
+            "status": "success",
+            "data": balances
+        })
+    except Exception as e:
+        add_log("ERROR", f"获取信用余额失败: {str(e)}", "account_management")
+        return jsonify({
+            "status": "error",
+            "message": f"获取信用余额失败: {str(e)}"
+        }), 500
+
+@app.route('/api/ovh/account/sub-accounts', methods=['GET'])
+def get_sub_accounts():
+    """获取子账户列表 - GET /me/subAccount"""
+    client = get_ovh_client()
+    if not client:
+        return jsonify({"status": "error", "message": "未配置OVH API"}), 400
+    
+    try:
+        # 获取子账户ID列表
+        sub_account_ids = client.get('/me/subAccount')
+        
+        # 获取每个子账户的详细信息
+        sub_accounts = []
+        for sub_id in sub_account_ids:
+            try:
+                sub_detail = client.get(f'/me/subAccount/{sub_id}')
+                sub_accounts.append(sub_detail)
+            except Exception as e:
+                add_log("WARNING", f"获取子账户 {sub_id} 详情失败: {str(e)}", "account_management")
+        
+        add_log("INFO", f"成功获取 {len(sub_accounts)} 个子账户", "account_management")
+        return jsonify({
+            "status": "success",
+            "data": sub_accounts
+        })
+    except Exception as e:
+        add_log("ERROR", f"获取子账户列表失败: {str(e)}", "account_management")
+        return jsonify({
+            "status": "error",
+            "message": f"获取子账户列表失败: {str(e)}"
+        }), 500
+
+@app.route('/api/ovh/account/bills', methods=['GET'])
+def get_account_bills():
+    """获取账单列表 - GET /me/bill"""
+    client = get_ovh_client()
+    if not client:
+        return jsonify({"status": "error", "message": "未配置OVH API"}), 400
+    
+    try:
+        # 获取账单ID列表
+        bill_ids = client.get('/me/bill')
+        
+        # 获取最近20个账单的详细信息
+        bills = []
+        for bill_id in bill_ids[:20]:
+            try:
+                bill_detail = client.get(f'/me/bill/{bill_id}')
+                bills.append(bill_detail)
+            except Exception as e:
+                add_log("WARNING", f"获取账单 {bill_id} 详情失败: {str(e)}", "account_management")
+        
+        add_log("INFO", f"成功获取 {len(bills)} 条账单记录", "account_management")
+        return jsonify({
+            "status": "success",
+            "data": bills
+        })
+    except Exception as e:
+        add_log("ERROR", f"获取账单列表失败: {str(e)}", "account_management")
+        return jsonify({
+            "status": "error",
+            "message": f"获取账单列表失败: {str(e)}"
+        }), 500
+
 if __name__ == '__main__':
     # 确保所有文件都存在
     ensure_files_exist()

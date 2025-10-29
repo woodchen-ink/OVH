@@ -18,6 +18,7 @@ import MonitorPage from "./pages/MonitorPage";
 import VPSMonitorPage from "./pages/VPSMonitorPage";
 import ConfigSniperPage from "./pages/ConfigSniperPage";
 import ServerControlPage from "./pages/ServerControlPage";
+import AccountManagementPage from "./pages/AccountManagementPage";
 import NotFound from "./pages/NotFound";
 import Layout from "./components/Layout";
 
@@ -48,6 +49,7 @@ const App = () => (
                   <Route path="vps-monitor" element={<VPSMonitorPage />} />
                   <Route path="config-sniper" element={<ConfigSniperPage />} />
                   <Route path="server-control" element={<ServerControlPage />} />
+                  <Route path="account-management" element={<AccountManagementPage />} />
                   <Route path="history" element={<HistoryPage />} />
                   <Route path="logs" element={<LogsPage />} />
                   <Route path="settings" element={<SettingsPage />} />

@@ -22,6 +22,7 @@ const Sidebar = ({ onToggle, isOpen }: SidebarProps) => {
     { path: "/vps-monitor", icon: "cloud", label: "VPS补货通知" },
     { path: "/config-sniper", icon: "target", label: "配置绑定狙击" },
     { path: "/server-control", icon: "terminal", label: "服务器控制" },
+    { path: "/account-management", icon: "user", label: "账户管理" },
     { path: "/history", icon: "clock", label: "抢购历史" },
     { path: "/logs", icon: "file-text", label: "详细日志" },
     { path: "/settings", icon: "settings", label: "API设置" },
@@ -156,6 +157,12 @@ const Sidebar = ({ onToggle, isOpen }: SidebarProps) => {
                   <>
                     <polyline points="4 17 10 11 4 5"></polyline>
                     <line x1="12" y1="19" x2="20" y2="19"></line>
+                  </>
+                )}
+                {item.icon === "user" && (
+                  <>
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
                   </>
                 )}
                 {item.icon === "settings" && (
