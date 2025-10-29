@@ -77,11 +77,17 @@ const SettingsPage = () => {
     }
   }, [formValues.zone]);
 
-  // 加载 Webhook 信息
+  // 加载 Webhook 信息（可选功能，失败不显示错误）
   const loadWebhookInfo = async () => {
+    if (!tgToken) {
+      // 没有token时，不尝试加载
+      setIsLoadingWebhookInfo(false);
+      return;
+    }
+    
     setIsLoadingWebhookInfo(true);
     try {
-      const response = await api.get('/api/telegram/get-webhook-info');
+      const response = await api.get('/telegram/get-webhook-info');
       const data = response.data;
       if (data.success && data.webhook_info) {
         setWebhookInfo(data.webhook_info);
@@ -90,10 +96,9 @@ const SettingsPage = () => {
         }
       }
     } catch (error: any) {
-      console.error('获取 webhook 信息失败:', error);
-      if (error.response?.data?.error) {
-        toast.error('获取 webhook 信息失败：' + error.response.data.error);
-      }
+      // 静默失败，webhook是可选的
+      console.log('Webhook 功能未配置或不可用（这是可选的）');
+      setWebhookInfo(null);
     } finally {
       setIsLoadingWebhookInfo(false);
     }
@@ -107,6 +112,11 @@ const SettingsPage = () => {
 
   // 设置 Webhook
   const handleSetWebhook = async () => {
+    if (!tgToken) {
+      toast.error('请先配置 Telegram Bot Token');
+      return;
+    }
+    
     if (!webhookUrl.trim()) {
       toast.error('请输入 Webhook URL');
       return;
@@ -114,7 +124,7 @@ const SettingsPage = () => {
 
     setIsSettingWebhook(true);
     try {
-      const response = await api.post('/api/telegram/set-webhook', {
+      const response = await api.post('/telegram/set-webhook', {
         webhook_url: webhookUrl
       });
       
@@ -123,6 +133,8 @@ const SettingsPage = () => {
       if (data.success) {
         toast.success('Webhook 设置成功！');
         setWebhookInfo(data.webhook_info);
+        // 重新加载信息
+        await loadWebhookInfo();
       } else {
         toast.error(data.error || '设置失败');
       }
@@ -629,7 +641,7 @@ const SettingsPage = () => {
                       {!tgToken && (
                         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded p-3">
                           <p className="text-xs text-yellow-300">
-                            ⚠️ 请先配置 Telegram Bot Token 才能设置 Webhook
+                            ⚠️ 请先配置 Telegram Bot Token 才能设置 Webhook（此功能为可选）
                           </p>
                         </div>
                       )}

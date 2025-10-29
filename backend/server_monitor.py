@@ -168,17 +168,25 @@ class ServerMonitor:
                         status_key = f"{dc}|{config_key}"
                         old_status = last_status.get(status_key)
                         
-                        # 检查是否需要发送通知（只在状态变化时通知）
+                        # 检查是否需要发送通知（包括首次检查）
                         status_changed = False
                         change_type = None
                         
-                        # 首次检查时不发送通知，只记录状态
+                        # 首次检查时也发送通知（如果配置允许）
                         if old_status is None:
                             config_desc = f" [{config_display}]" if config_display else ""
                             if status == "unavailable":
                                 self.add_log("INFO", f"首次检查: {plan_code}@{dc}{config_desc} 无货", "monitor")
+                                # 首次检查无货时不通知（除非用户明确要求）
+                                if subscription.get("notifyUnavailable", False):
+                                    status_changed = True
+                                    change_type = "unavailable"
                             else:
-                                self.add_log("INFO", f"首次检查: {plan_code}@{dc}{config_desc} 有货（状态: {status}），不发送通知", "monitor")
+                                # 首次检查有货时发送通知
+                                self.add_log("INFO", f"首次检查: {plan_code}@{dc}{config_desc} 有货（状态: {status}），发送通知", "mon instantly")
+                                if subscription.get("notifyAvailable", True):
+                                    status_changed = True
+                                    change_type = "available"
                         # 从无货变有货
                         elif old_status == "unavailable" and status != "unavailable":
                             if subscription.get("notifyAvailable", True):
@@ -348,17 +356,25 @@ class ServerMonitor:
             config_info: 配置信息 {"memory": "xxx", "storage": "xxx", "display": "xxx"}
             status_key: 状态键（用于lastStatus）
         """
-        # 状态变化检测（只在状态变化时通知，首次检查不通知）
+        # 状态变化检测（包括首次检查）
         status_changed = False
         change_type = None
         
-        # 首次检查时不发送通知，只记录状态
+        # 首次检查时也发送通知（如果配置允许）
         if old_status is None:
             config_desc = f" [{config_info['display']}]" if config_info else ""
             if status == "unavailable":
                 self.add_log("INFO", f"首次检查: {plan_code}@{dc}{config_desc} 无货", "monitor")
+                # 首次检查无货时不通知（除非用户明确要求）
+                if subscription.get("notifyUnavailable", False):
+                    status_changed = True
+                    change_type = "unavailable"
             else:
-                self.add_log("INFO", f"首次检查: {plan_code}@{dc}{config_desc} 有货（状态: {status}），不发送通知", "monitor")
+                # 首次检查有货时发送通知
+                self.add_log("INFO", f"首次检查: {plan_code}@{dc}{config_desc} 有货（状态: {status}），发送通知", "monitor")
+            if subscription.get("notifyAvailable", True):
+                status_changed = True
+                change_type = "available"
         # 从无货变有货
         elif old_status == "unavailable" and status != "unavailable":
             if subscription.get("notifyAvailable", True):
