@@ -142,6 +142,17 @@ def load_data():
                 content = f.read().strip()
                 if content:  # 确保文件不是空的
                     logs = json.loads(content)
+                    original_count = len(logs)
+                    # 限制日志数量为1000条（保留最新的）
+                    if len(logs) > 1000:
+                        logs = logs[-1000:]
+                        # 立即保存限制后的日志回文件
+                        try:
+                            with open(LOGS_FILE, 'w', encoding='utf-8') as f:
+                                json.dump(logs, f, ensure_ascii=False, indent=2)
+                            print(f"日志文件已限制为1000条（原{original_count}条）")
+                        except Exception as e:
+                            print(f"警告: 保存限制后的日志文件失败: {e}")
                 else:
                     print(f"警告: {LOGS_FILE}文件为空，使用空列表")
         except (json.JSONDecodeError, UnicodeDecodeError) as e:
@@ -331,8 +342,13 @@ def add_log(level, message, source="system"):
     
     if should_write:
         try:
+            # 确保写入文件时日志数量不超过1000条
+            logs_to_write = logs[-1000:] if len(logs) > 1000 else logs
             with open(LOGS_FILE, 'w', encoding='utf-8') as f:
-                json.dump(logs, f, ensure_ascii=False, indent=2)
+                json.dump(logs_to_write, f, ensure_ascii=False, indent=2)
+            # 如果日志被截断，更新内存中的logs
+            if len(logs) > 1000:
+                logs = logs_to_write
             log_write_counter = 0
         except Exception as e:
             logging.error(f"写入日志文件失败: {str(e)}")
@@ -349,6 +365,9 @@ def add_log(level, message, source="system"):
 def flush_logs():
     global logs, log_write_counter
     try:
+        # 确保日志数量不超过1000条
+        if len(logs) > 1000:
+            logs = logs[-1000:]
         with open(LOGS_FILE, 'w', encoding='utf-8') as f:
             json.dump(logs, f, ensure_ascii=False, indent=2)
         log_write_counter = 0
