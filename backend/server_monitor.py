@@ -661,7 +661,9 @@ class ServerMonitor:
                     "lon": "🇬🇧 英国·伦敦",
                     "par": "🇫🇷 法国·巴黎",
                     "eri": "🇮🇹 意大利·埃里切",
-                    "lim": "🇵🇱 波兰·利马诺瓦"
+                    "lim": "🇵🇱 波兰·利马诺瓦",
+                    "vin": "🇺🇸 美国·弗吉尼亚",
+                    "hil": "🇺🇸 美国·俄勒冈"
                 }
                 dc_display = dc_display_map.get(dc.lower(), dc.upper())
                 message += f"  • {dc_display} ({dc.upper()})\n"
@@ -687,7 +689,9 @@ class ServerMonitor:
                     "lon": "🇬🇧 Lon",
                     "par": "🇫🇷 Par",
                     "eri": "🇮🇹 Eri",
-                    "lim": "🇵🇱 Lim"
+                    "lim": "🇵🇱 Lim",
+                    "vin": "🇺🇸 Vin",
+                    "hil": "🇺🇸 Hil"
                 }
                 # 生成按钮文本，包含机房信息和"一键下单"提示
                 dc_display_short = dc_display_map.get(dc.lower(), dc.upper())

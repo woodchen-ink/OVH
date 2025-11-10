@@ -1231,11 +1231,11 @@ def load_server_list():
                     dc["dcName"] = "博阿尔诺"
                     dc["region"] = "加拿大"
                 elif dc_code == "hil":
-                    dc["dcName"] = "希尔斯伯勒"
-                    dc["region"] = "美国"
+                    dc["dcName"] = "俄勒冈"
+                    dc["region"] = "美国西部"
                 elif dc_code == "vin":
-                    dc["dcName"] = "维也纳"
-                    dc["region"] = "美国"
+                    dc["dcName"] = "弗吉尼亚"
+                    dc["region"] = "美国东部"
                 elif dc_code == "lim":
                     dc["dcName"] = "利马索尔"
                     dc["region"] = "塞浦路斯"
