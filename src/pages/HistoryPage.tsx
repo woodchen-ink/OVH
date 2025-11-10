@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { api } from "@/utils/apiClient";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useToast } from "@/components/ToastContainer";
 
 interface PurchaseHistory {
   id: string;
@@ -24,13 +25,13 @@ interface PurchaseHistory {
 
 const HistoryPage = () => {
   const isMobile = useIsMobile();
+  const { showConfirm } = useToast();
   const [history, setHistory] = useState<PurchaseHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false); // 区分初始加载和刷新
   const [filterStatus, setFilterStatus] = useState<"all" | "success" | "failed">("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredHistory, setFilteredHistory] = useState<PurchaseHistory[]>([]);
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // Fetch purchase history
   const fetchHistory = async (isRefresh = false) => {
@@ -55,15 +56,24 @@ const HistoryPage = () => {
 
   // Clear history
   const clearHistory = async () => {
+    const confirmed = await showConfirm({
+      title: '确认清空',
+      message: '确定要清空所有购买历史记录吗？\n此操作不可撤销。',
+      confirmText: '确认清空',
+      cancelText: '取消'
+    });
+    
+    if (!confirmed) {
+      return;
+    }
+    
     try {
       await api.delete(`/purchase-history`);
       toast.success("已清空购买历史记录");
       fetchHistory(true);
-      setShowClearConfirm(false);
     } catch (error) {
       console.error("Error clearing purchase history:", error);
       toast.error("清空购买历史记录失败");
-      setShowClearConfirm(false);
     }
   };
 
@@ -154,7 +164,7 @@ const HistoryPage = () => {
             </button>
             
             <button
-              onClick={() => setShowClearConfirm(true)}
+              onClick={clearHistory}
               className="cyber-button text-xs flex items-center bg-red-900/30 border-red-700/40 text-red-300 hover:bg-red-800/40 hover:border-red-600/50 hover:text-red-200"
               disabled={isLoading || history.length === 0}
             >
@@ -362,42 +372,6 @@ const HistoryPage = () => {
           </div>
         )}
       </div>
-      
-      {/* 确认清空对话框 */}
-      {showClearConfirm && (
-        <div 
-          className="fixed top-0 left-0 right-0 bottom-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999]" 
-          style={{ position: 'fixed', margin: 0 }}
-          onClick={() => setShowClearConfirm(false)}
-        >
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-cyber-surface-dark border border-cyber-border rounded-lg p-6 max-w-md mx-4 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold text-cyber-primary-accent mb-3">⚠️ 确认清空</h3>
-            <p className="text-cyber-text mb-6">
-              确定要清空所有购买历史记录吗？<br />
-              <span className="text-red-400 text-sm">此操作不可撤销。</span>
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowClearConfirm(false)}
-                className="cyber-button px-4 py-2"
-              >
-                取消
-              </button>
-              <button
-                onClick={clearHistory}
-                className="cyber-button px-4 py-2 bg-red-900/30 border-red-700/40 text-red-300 hover:bg-red-800/40 hover:border-red-600/50 hover:text-red-200"
-              >
-                确认清空
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
     </div>
   );
 };

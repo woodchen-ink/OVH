@@ -238,33 +238,85 @@ const AccountManagementPage = () => {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="flex items-center justify-between"
       >
-        <div>
-          <h1 className="text-3xl font-bold mb-1 cyber-glow-text">账户管理</h1>
-          <p className="text-cyber-muted">查看和管理您的 OVH 账户信息</p>
-        </div>
-        {/* 客户代码 - 右上角 */}
-        {loading.account ? (
-          <div className="flex items-center gap-2 cyber-panel bg-cyber-grid/30 px-4 py-3">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-cyber-muted text-sm">加载中...</span>
-          </div>
-        ) : accountInfo ? (
-          <div className="cyber-panel bg-cyber-grid/30 px-6 py-3">
-            <div className="flex items-center gap-2 mb-2">
-              <User className="w-4 h-4 text-cyber-muted" />
-              <span className="text-xs text-cyber-muted">客户代码</span>
-            </div>
-            <p className="text-xl font-bold text-cyber-accent">
-              {accountInfo.customerCode}
-            </p>
-            <p className="text-xs text-cyber-muted mt-1">
-              {accountInfo.nichandle}
-            </p>
-          </div>
-        ) : null}
+        <h1 className="text-3xl font-bold mb-1 cyber-glow-text">账户管理</h1>
+        <p className="text-cyber-muted">查看和管理您的 OVH 账户信息</p>
       </motion.div>
+
+      {/* 账户信息卡片 - 顶部主要信息 */}
+      {loading.account ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="cyber-card p-6"
+        >
+          <div className="flex items-center gap-3">
+            <Loader2 className="w-5 h-5 animate-spin text-cyber-accent" />
+            <span className="text-cyber-muted">加载账户信息中...</span>
+          </div>
+        </motion.div>
+      ) : accountInfo ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="cyber-card p-6"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* 客户代码 */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-cyber-accent/20 flex-shrink-0">
+                  <User className="w-5 h-5 text-cyber-accent" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-cyber-muted font-medium mb-1">客户代码</p>
+                  <p className="text-2xl font-bold text-cyber-accent leading-tight">
+                    {accountInfo.customerCode}
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-cyber-muted/70 pl-14">
+                {accountInfo.nichandle}
+              </p>
+            </div>
+            
+            {/* 邮箱地址 */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-cyber-accent/20 flex-shrink-0">
+                  <Mail className="w-5 h-5 text-cyber-accent" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-cyber-muted font-medium mb-1">邮箱地址</p>
+                  <p className="text-lg font-semibold text-cyber-text leading-tight break-all">
+                    {accountInfo.email}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 账户持有人 */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-cyber-accent/20 flex-shrink-0">
+                  <User className="w-5 h-5 text-cyber-accent" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-cyber-muted font-medium mb-1">账户持有人</p>
+                  <p className="text-lg font-semibold text-cyber-text leading-tight">
+                    {accountInfo.firstname} {accountInfo.name}
+                  </p>
+                </div>
+              </div>
+              {accountInfo.city && accountInfo.country && (
+                <p className="text-xs text-cyber-muted/70 pl-14">
+                  {accountInfo.city}, {accountInfo.country}
+                </p>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      ) : null}
 
       {/* 详细信息标签页 */}
       <Tabs defaultValue="emails" className="w-full">
@@ -289,14 +341,11 @@ const AccountManagementPage = () => {
                   <span>邮件列表</span>
                   <button 
                     onClick={fetchEmailHistory}
-                    className="cyber-button-sm"
+                    className="cyber-button text-xs flex items-center gap-2"
                     disabled={loading.emails}
                   >
-                    {loading.emails ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="w-4 h-4" />
-                    )}
+                    <RefreshCw className={`w-4 h-4 ${loading.emails ? 'animate-spin' : ''}`} />
+                    <span>刷新</span>
                   </button>
                 </CardTitle>
                 <CardDescription>OVH 发送给您的邮件通知</CardDescription>
@@ -411,14 +460,11 @@ const AccountManagementPage = () => {
                 <span>退款记录</span>
                 <button 
                   onClick={fetchRefunds}
-                  className="cyber-button-sm"
+                  className="cyber-button text-xs flex items-center gap-2"
                   disabled={loading.refunds}
                 >
-                  {loading.refunds ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-4 h-4" />
-                  )}
+                  <RefreshCw className={`w-4 h-4 ${loading.refunds ? 'animate-spin' : ''}`} />
+                  <span>刷新</span>
                 </button>
               </CardTitle>
               <CardDescription>查看您的退款记录和状态</CardDescription>
@@ -487,68 +533,75 @@ const AccountManagementPage = () => {
         {/* KYC验证状态 - 使用字段: accountInfo.kycValidated */}
         <motion.div variants={itemVariants}>
           <Card className="cyber-card">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-cyber-muted flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" />
-                KYC 验证
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading.account ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-cyber-muted text-sm">加载中...</span>
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3">
+                <div className={`p-2.5 rounded-lg flex-shrink-0 ${
+                  accountInfo?.kycValidated ? 'bg-green-500/20' : 'bg-yellow-500/20'
+                }`}>
+                  <CheckCircle className={`w-5 h-5 ${
+                    accountInfo?.kycValidated ? 'text-green-400' : 'text-yellow-400'
+                  }`} />
                 </div>
-              ) : (
-                <div>
-                  {accountInfo?.kycValidated ? (
-                    <>
-                      <p className="text-2xl font-bold text-green-400">已验证</p>
-                      <p className="text-xs text-cyber-muted mt-1">身份已确认</p>
-                    </>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-cyber-muted mb-2">KYC 验证</p>
+                  {loading.account ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-cyber-muted text-sm">加载中...</span>
+                    </div>
                   ) : (
                     <>
-                      <p className="text-2xl font-bold text-yellow-400">未验证</p>
-                      <p className="text-xs text-cyber-muted mt-1">需要验证</p>
+                      <p className={`text-2xl font-bold mb-1 ${
+                        accountInfo?.kycValidated ? 'text-green-400' : 'text-yellow-400'
+                      }`}>
+                        {accountInfo?.kycValidated ? '已验证' : '未验证'}
+                      </p>
+                      <p className="text-xs text-cyber-muted">
+                        {accountInfo?.kycValidated ? '身份已确认' : '需要验证身份'}
+                      </p>
                     </>
                   )}
                 </div>
-              )}
-              <p className="text-[10px] text-cyber-muted/60 mt-2 pt-2 border-t border-cyber-muted/20">
-                数据来源: GET /api/ovh/account/info → OVH API: GET /me
-              </p>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* 账户状态 - 使用字段: accountInfo.state, accountInfo.email */}
+        {/* 账户状态 - 使用字段: accountInfo.state */}
         <motion.div variants={itemVariants}>
           <Card className="cyber-card">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-cyber-muted flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" />
-                账户状态
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading.account ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-cyber-muted text-sm">加载中...</span>
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3">
+                <div className={`p-2.5 rounded-lg flex-shrink-0 ${
+                  accountInfo?.state === 'complete' ? 'bg-green-500/20' : 'bg-cyber-accent/20'
+                }`}>
+                  <AlertCircle className={`w-5 h-5 ${
+                    accountInfo?.state === 'complete' ? 'text-green-400' : 'text-cyber-accent'
+                  }`} />
                 </div>
-              ) : (
-                <div>
-                  <p className={`text-2xl font-bold ${accountInfo?.state === 'complete' ? 'text-green-400' : 'text-cyber-text'}`}>
-                    {accountInfo?.state === 'complete' ? '正常' : accountInfo?.state || '-'}
-                  </p>
-                  <p className="text-xs text-cyber-muted mt-1">
-                    {accountInfo?.email || '-'}
-                  </p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-cyber-muted mb-2">账户状态</p>
+                  {loading.account ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-cyber-muted text-sm">加载中...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <p className={`text-2xl font-bold mb-1 ${
+                        accountInfo?.state === 'complete' ? 'text-green-400' : 'text-cyber-text'
+                      }`}>
+                        {accountInfo?.state === 'complete' ? '正常' : accountInfo?.state || '-'}
+                      </p>
+                      {accountInfo?.phone && (
+                        <p className="text-xs text-cyber-muted break-all">
+                          电话: {accountInfo.phone}
+                        </p>
+                      )}
+                    </>
+                  )}
                 </div>
-              )}
-              <p className="text-[10px] text-cyber-muted/60 mt-2 pt-2 border-t border-cyber-muted/20">
-                数据来源: GET /api/ovh/account/info → OVH API: GET /me
-              </p>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
@@ -556,31 +609,32 @@ const AccountManagementPage = () => {
         {/* 账户货币 - 使用字段: accountInfo.currency.code, accountInfo.currency.symbol */}
         <motion.div variants={itemVariants}>
           <Card className="cyber-card">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-cyber-muted flex items-center gap-2">
-                <Wallet className="w-4 h-4" />
-                账户货币
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading.account ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-cyber-muted text-sm">加载中...</span>
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-lg bg-cyber-accent/20 flex-shrink-0">
+                  <Wallet className="w-5 h-5 text-cyber-accent" />
                 </div>
-              ) : (
-                <div>
-                  <p className="text-2xl font-bold text-cyber-text">
-                    {accountInfo?.currency?.code || '-'}
-                  </p>
-                  <p className="text-xs text-cyber-muted mt-1">
-                    符号: {accountInfo?.currency?.symbol || '-'}
-                  </p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-cyber-muted mb-2">账户货币</p>
+                  {loading.account ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-cyber-muted text-sm">加载中...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-bold text-cyber-text mb-1">
+                        {accountInfo?.currency?.code || '-'}
+                      </p>
+                      {accountInfo?.currency?.symbol && (
+                        <p className="text-xs text-cyber-muted">
+                          符号: {accountInfo.currency.symbol}
+                        </p>
+                      )}
+                    </>
+                  )}
                 </div>
-              )}
-              <p className="text-[10px] text-cyber-muted/60 mt-2 pt-2 border-t border-cyber-muted/20">
-                数据来源: GET /api/ovh/account/info → OVH API: GET /me
-              </p>
+              </div>
             </CardContent>
           </Card>
         </motion.div>

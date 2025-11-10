@@ -74,8 +74,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999]"
               onClick={() => handleConfirm(false)}
             />
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-              <div className="bg-cyber-dark border-2 border-cyber-accent/50 rounded-lg p-6 max-w-md w-full">
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
+              <div className="cyber-card p-6 max-w-md w-full pointer-events-auto">
                 <h3 className="text-xl font-bold text-cyber-text mb-2">
                   {confirmDialog.options.title}
                 </h3>

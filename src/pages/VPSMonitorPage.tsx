@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Bell, BellOff, Plus, Trash2, Settings, RefreshCw, History, ChevronUp, Server } from 'lucide-react';
 import { useAPI } from '@/context/APIContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useToast } from '@/components/ToastContainer';
 
 interface VPSSubscription {
   id: string;
@@ -38,6 +39,7 @@ interface HistoryEntry {
 const VPSMonitorPage = () => {
   const isMobile = useIsMobile();
   const { isAuthenticated } = useAPI();
+  const { showConfirm } = useToast();
   const [subscriptions, setSubscriptions] = useState<VPSSubscription[]>([]);
   const [monitorStatus, setMonitorStatus] = useState<MonitorStatus>({
     running: false,
@@ -160,7 +162,14 @@ const VPSMonitorPage = () => {
 
   // 删除订阅
   const handleRemoveSubscription = async (id: string, planCode: string) => {
-    if (!window.confirm(`确定要取消订阅 ${planCode} 吗？`)) {
+    const confirmed = await showConfirm({
+      title: '取消订阅',
+      message: `确定要取消订阅 ${planCode} 吗？`,
+      confirmText: '确定',
+      cancelText: '取消'
+    });
+    
+    if (!confirmed) {
       return;
     }
     
@@ -176,7 +185,14 @@ const VPSMonitorPage = () => {
 
   // 清空所有订阅
   const handleClearAll = async () => {
-    if (!window.confirm('确定要清空所有VPS订阅吗？此操作不可撤销。')) {
+    const confirmed = await showConfirm({
+      title: '清空所有订阅',
+      message: '确定要清空所有VPS订阅吗？此操作不可撤销。',
+      confirmText: '确定清空',
+      cancelText: '取消'
+    });
+    
+    if (!confirmed) {
       return;
     }
     
