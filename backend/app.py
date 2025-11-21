@@ -1013,11 +1013,7 @@ def purchase_server(queue_item):
     try:
         # Check availability with multi-DC and priority weights
         # 构建目标机房列表
-        target_dcs = []
-        if isinstance(queue_item.get("datacenters"), list) and queue_item.get("datacenters"):
-            target_dcs = queue_item.get("datacenters")
-        elif queue_item.get("datacenter"):
-            target_dcs = [queue_item.get("datacenter")]  # 兼容旧任务
+        target_dcs = queue_item.get("datacenters")
 
         # 直接使用列表顺序作为优先级（靠前优先）
         sorted_target_dcs = target_dcs[:]
@@ -1025,14 +1021,53 @@ def purchase_server(queue_item):
         add_log("INFO", f"开始为 {queue_item['planCode']} 在 {','.join(sorted_target_dcs)} 的购买流程（按顺序优先）", "purchase")
 
         availabilities = helper.get('/dedicated/server/datacenter/availabilities', planCode=queue_item["planCode"])
+        options = queue_item.get("options") or []
+        matched_config = None
+        if options:
+            memory_option = None
+            storage_option = None
+            for opt in options:
+                o = str(opt).lower()
+                if 'ram-' in o or 'memory' in o:
+                    memory_option = opt
+                elif 'softraid-' in o or 'hybrid' in o or 'disk' in o or 'nvme' in o or 'raid' in o:
+                    storage_option = opt
+            for item in availabilities:
+                item_memory = item.get("memory")
+                item_storage = item.get("storage")
+                memory_match = True
+                if memory_option:
+                    if item_memory:
+                        user_memory_key = '-'.join(str(memory_option).split('-')[:2])
+                        ovh_memory_key = '-'.join(str(item_memory).split('-')[:2])
+                        memory_match = (user_memory_key == ovh_memory_key)
+                    else:
+                        memory_match = False
+                else:
+                    memory_match = True
+                storage_match = True
+                if storage_option:
+                    if item_storage:
+                        storage_match = str(storage_option).startswith(str(item_storage))
+                    else:
+                        storage_match = False
+                else:
+                    storage_match = True
+                if memory_match and storage_match:
+                    matched_config = item
+                    break
+            if not matched_config:
+                add_log("INFO", f"未找到与选项匹配的配置: {options}", "purchase")
+                return False
+        configs_to_check = [matched_config] if matched_config else ([availabilities[0]] if availabilities else [])
         found_available = False
         selected_api_dc = None
         selected_display_dc = None
-        # 按优先级逐个机房查询是否有货
+        # 仅在匹配到的配置中检查机房可用性
         for display_dc in sorted_target_dcs:
             api_dc = _convert_display_dc_to_api_dc(display_dc)
-            for item in availabilities:
-                for dc_info in item.get("datacenters", []):
+            for cfg in configs_to_check:
+                for dc_info in cfg.get("datacenters", []):
                     if dc_info.get("datacenter") == api_dc and dc_info.get("availability") not in ["unavailable", "unknown"]:
                         found_available = True
                         selected_api_dc = api_dc
@@ -1045,13 +1080,11 @@ def purchase_server(queue_item):
 
         if not found_available:
             add_log("INFO", f"服务器 {queue_item['planCode']} 在数据中心 {','.join(sorted_target_dcs)} 当前无货", "purchase")
-            # Even if not available, we might want to record this attempt in history if it's the first one
-            # For now, returning False will prevent history update here, purchase_server is called in a loop by queue processor
             return False
         
         # Create cart
         zone_cfg = get_current_account_config(queue_item.get("accountId"))
-        add_log("INFO", f"为区域 {zone_cfg['zone']} 创建购物车", "purchase")
+        add_log("INFO", f"为账号 {zone_cfg['alias']} 创建购物车", "purchase")
         cart_result = helper.post('/order/cart', ovhSubsidiary=zone_cfg["zone"])
         cart_id = cart_result["cartId"]
         add_log("INFO", f"购物车创建成功，ID: {cart_id}", "purchase")
