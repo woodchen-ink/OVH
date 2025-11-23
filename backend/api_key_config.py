@@ -33,4 +33,5 @@ WHITELIST_PATHS = [
     '/api/health',
     '/api/internal/monitor/price',  # 内部监控价格API，不需要API密钥验证
     '/api/telegram/webhook',  # Telegram webhook，不需要API密钥验证（Telegram服务器调用）
+    '/api/version',  # 版本查询，前端需无密钥可访问
 ]

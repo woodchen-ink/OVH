@@ -23,6 +23,7 @@ from telegram_utils import tg_send_message as tg_send
 from telegram_utils import processed_callback_ids
 from dotenv import load_dotenv
 
+APP_VERSION = "v2.0.3"
 # 加载 .env 文件
 load_dotenv()
 
@@ -4393,7 +4394,11 @@ def get_monitor_price():
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
     update_stats()
-    return jsonify(stats)
+    return jsonify({**stats, "appVersion": APP_VERSION})
+
+@app.route('/api/version', methods=['GET'])
+def get_version():
+    return jsonify({"version": APP_VERSION})
 
 @app.route('/api/stats/accounts', methods=['GET'])
 def get_stats_per_account():

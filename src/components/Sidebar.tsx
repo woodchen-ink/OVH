@@ -2,6 +2,8 @@ import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAPI } from "@/context/APIContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useEffect, useState } from "react";
+import { api } from "@/utils/apiClient";
 
 interface SidebarProps {
   onToggle: () => void;
@@ -13,6 +15,20 @@ const Sidebar = ({ onToggle, isOpen }: SidebarProps) => {
   const { isAuthenticated, accounts, currentAccountId, setCurrentAccount } = useAPI();
   const isMobile = useIsMobile();
   const currentZone = (accounts.find((acc: any) => acc?.id === currentAccountId)?.zone) || '';
+  const [appVersion, setAppVersion] = useState<string>('-');
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const r = await api.get('/version');
+        const v = (r as any)?.data?.version;
+        if (mounted && typeof v === 'string' && v) setAppVersion(v);
+      } catch {
+        // 不显示构建版本，保持'-'，以免与后端版本不一致
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
   
   const menuItems = [
     { path: "/", icon: "bar-chart-2", label: "仪表盘" },
@@ -192,7 +208,7 @@ const Sidebar = ({ onToggle, isOpen }: SidebarProps) => {
                     {currentZone}
                   </span>
                 )}
-                <span className="text-cyber-muted text-xs">{`v${__APP_VERSION__}${__APP_BUILD_CHANNEL__ && __APP_BUILD_CHANNEL__ !== 'release' ? `-${__APP_BUILD_CHANNEL__}` : ''}`}</span>
+                <span className="text-cyber-muted text-xs">{appVersion}</span>
               </div>
             </div>
           </div>
