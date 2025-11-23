@@ -40,6 +40,15 @@ jobs:
             type=raw,value=beta,enable=${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
             type=sha
 
+      - name: Set build channel
+        id: channel
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "value=release" >> $GITHUB_OUTPUT
+          else
+            echo "value=beta" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build and push single
         uses: docker/build-push-action@v5
         with:
@@ -51,3 +60,5 @@ jobs:
           labels: ${{ steps.meta_single.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            VITE_BUILD_CHANNEL=${{ steps.channel.outputs.value }}

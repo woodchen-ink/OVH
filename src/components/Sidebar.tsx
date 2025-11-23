@@ -201,7 +201,7 @@ const Sidebar = ({ onToggle, isOpen }: SidebarProps) => {
                 {currentZone}
               </span>
             )}
-            <div className="text-cyber-muted text-xs">v2.0.0</div>
+            <div className="text-cyber-muted text-xs">{`v${__APP_VERSION__}${__APP_BUILD_CHANNEL__ && __APP_BUILD_CHANNEL__ !== 'release' ? `-${__APP_BUILD_CHANNEL__}` : ''}`}</div>
           </div>
         </div>
       </div>

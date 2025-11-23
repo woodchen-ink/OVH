@@ -19,4 +19,8 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || ''),
+    __APP_BUILD_CHANNEL__: JSON.stringify(process.env.VITE_BUILD_CHANNEL || ''),
+  },
 }));

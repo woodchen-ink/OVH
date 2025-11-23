@@ -394,7 +394,7 @@ const Dashboard = () => {
             </div>
             <div className="flex justify-between items-center p-3 rounded-lg bg-cyber-grid/5 mt-4 border-t border-cyber-grid/30 pt-4">
               <span className="text-cyber-muted text-sm">系统版本</span>
-              <span className="text-cyber-text text-sm font-mono font-semibold">v2.0.0</span>
+              <span className="text-cyber-text text-sm font-mono font-semibold">{`v${__APP_VERSION__}${__APP_BUILD_CHANNEL__ && __APP_BUILD_CHANNEL__ !== 'release' ? `-${__APP_BUILD_CHANNEL__}` : ''}`}</span>
             </div>
           </div>
         </motion.div>

@@ -1,5 +1,8 @@
 FROM node:18-alpine AS frontend-builder
 
+ARG VITE_BUILD_CHANNEL=beta
+ENV VITE_BUILD_CHANNEL=${VITE_BUILD_CHANNEL}
+
 WORKDIR /app
 
 COPY package*.json ./
