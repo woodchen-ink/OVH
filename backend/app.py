@@ -23,7 +23,7 @@ from telegram_utils import tg_send_message as tg_send
 from telegram_utils import processed_callback_ids
 from dotenv import load_dotenv
 
-APP_VERSION = "v2.0.4"
+APP_VERSION = "v2.0.5"
 # 加载 .env 文件
 load_dotenv()
 
