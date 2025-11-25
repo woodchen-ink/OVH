@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAPI } from "@/context/APIContext";
 import { useToast } from "@/components/ToastContainer";
+import { List, Layers } from "lucide-react";
 
 interface PurchaseHistory {
   id: string;
@@ -170,7 +171,7 @@ const HistoryPage = () => {
               placeholder="搜索..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="cyber-input pl-10 w-full"
+              className="cyber-input pl-10 w-full h-8 text-xs"
             />
           </div>
           
@@ -178,7 +179,7 @@ const HistoryPage = () => {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as "all" | "success" | "failed")}
-              className="cyber-input w-full"
+              className="cyber-input w-full h-8 leading-8 px-3 text-xs"
             >
               <option value="all">所有状态</option>
               <option value="success">成功</option>
@@ -187,20 +188,28 @@ const HistoryPage = () => {
           </div>
           
           <div className="flex items-center justify-end space-x-2">
-            <select
-              value={viewMode}
-              onChange={(e) => setViewMode(e.target.value as "list" | "group")}
-              className="cyber-input w-28"
-            >
-              <option value="list">列表视图</option>
-              <option value="group">按任务分组</option>
-            </select>
+            <div className="flex items-center gap-2" aria-label="视图切换">
+              <button
+                className={`cyber-button text-xs h-8 px-3 flex items-center gap-1 ${viewMode === 'list' ? 'bg-cyber-accent/20 border-cyber-accent/40 text-cyber-accent' : 'bg-cyber-grid/10 border-cyber-border text-cyber-text'}`}
+                onClick={() => setViewMode('list')}
+                title="列表视图"
+              >
+                <List size={14} /> 列表
+              </button>
+              <button
+                className={`cyber-button text-xs h-8 px-3 flex items-center gap-1 ${viewMode === 'group' ? 'bg-cyber-accent/20 border-cyber-accent/40 text-cyber-accent' : 'bg-cyber-grid/10 border-cyber-border text-cyber-text'}`}
+                onClick={() => setViewMode('group')}
+                title="按任务分组"
+              >
+                <Layers size={14} /> 分组
+              </button>
+            </div>
             <button
               onClick={() => fetchHistory(true)}
-              className="cyber-button text-xs flex items-center"
+              className="cyber-button text-xs h-8 px-3 flex items-center"
               disabled={isLoading || isRefreshing}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`mr-1 flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`mr-1 flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`}>
                 <polyline points="1 4 1 10 7 10"></polyline>
                 <polyline points="23 20 23 14 17 14"></polyline>
                 <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
@@ -210,10 +219,10 @@ const HistoryPage = () => {
             
             <button
               onClick={clearHistory}
-              className="cyber-button text-xs flex items-center bg-red-900/30 border-red-700/40 text-red-300 hover:bg-red-800/40 hover:border-red-600/50 hover:text-red-200"
+              className="cyber-button text-xs h-8 px-3 flex items-center bg-red-900/30 border-red-700/40 text-red-300 hover:bg-red-800/40 hover:border-red-600/50 hover:text-red-200"
               disabled={isLoading || history.length === 0}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
                 <path d="M3 6h18"></path>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>

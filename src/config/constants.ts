@@ -15,7 +15,7 @@ export const TASK_RETRY_INTERVAL = 30;
  * 任务重试间隔的最小值（秒）
  * 防止用户设置过小的值导致API过载
  */
-export const MIN_RETRY_INTERVAL = 30;
+export const MIN_RETRY_INTERVAL = 15;
 
 /**
  * 任务重试间隔的最大值（秒）
@@ -58,31 +58,43 @@ export const CACHE_EXPIRY = 2 * 60 * 60 * 1000; // 2小时
 // ==================== API配置 ====================
 
 /**
- * 后端API地址
- * 优先级：环境变量 > 自动检测 > 默认localhost
+ * 后端 API 基础地址推导
+ * 优先级：
+ * 1) 环境变量 `VITE_API_URL`
+ *    - 以 `/` 开头：按同源拼接 `window.location.origin + 相对路径`
+ *    - 其他：直接使用绝对/完整地址
+ * 2) 浏览器环境自动检测：
+ *    - 本地开发（localhost/127.0.0.1）：使用 `http://localhost:19998/api`
+ *    - 生产：同源 `/api`（由 Nginx 反向代理）
+ * 3) 非浏览器环境（SSR、构建、Node）安全回退：`/api`
+ * 说明：所有 `window` / `import.meta` 访问均做存在性检查，避免在非浏览器环境报错
  */
 export const API_URL = (() => {
-  // 1. Docker环境：使用相对路径（通过Nginx代理）
-  if (import.meta.env.VITE_API_URL) {
-    const envUrl = import.meta.env.VITE_API_URL;
+  // 兼容非浏览器环境，安全读取 VITE_API_URL
+  const metaEnv = (typeof import.meta !== 'undefined'
+    ? (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env
+    : undefined);
+  const envUrl = metaEnv?.VITE_API_URL;
+  if (envUrl) {
+    // 相对路径：同源拼接；绝对/完整地址：直接使用
     if (envUrl.startsWith('/')) {
-      return `${window.location.origin}${envUrl}`;
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      return origin ? `${origin}${envUrl}` : envUrl;
     }
     return envUrl;
   }
-  
-  // 2. 自动检测
-  const hostname = window.location.hostname;
-  const protocol = window.location.protocol;
-  const port = window.location.port;
-  
-  // 3. localhost开发模式
+
+  // 浏览器存在时进行自动检测
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    // 本地开发直连后端端口
     return 'http://localhost:19998/api';
   }
-  
-  // 4. 生产环境：同源访问（Nginx代理）
-  return `${window.location.origin}/api`;
+
+  // 生产同源；非浏览器环境兜底到相对路径
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  return origin ? `${origin}/api` : '/api';
 })();
 
 /**

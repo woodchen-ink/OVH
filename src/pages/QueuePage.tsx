@@ -968,22 +968,22 @@ const QueuePage = () => {
               </Tabs>
               <div className="mt-2 flex items-center justify-end">
                 <div
-                  className="relative inline-flex items-center bg-cyber-grid/10 border border-cyber-border rounded-full h-8 px-3"
+                  className="relative inline-flex items-center bg-cyber-grid/10 border border-cyber-border rounded-full h-7 px-3"
                   role="group"
                   aria-label="查看范围切换"
                 >
                   <button
-                    className={`relative z-10 text-[11px] px-4 py-1.5 leading-none rounded-full transition-colors ${!scopeAll ? 'text-cyber-bg' : 'text-cyber-text'}`}
+                    className={`relative z-10 text-[11px] h-7 px-4 leading-none rounded-full transition-colors flex items-center ${!scopeAll ? 'text-cyber-bg' : 'text-cyber-text'}`}
                     onClick={() => { if (scopeAll) { setScopeAll(false); fetchQueueItems(true, false); } }}
                     title="只看当前账户"
                   >当前账户</button>
                   <button
-                    className={`relative z-10 text-[11px] px-4 py-1.5 leading-none rounded-full transition-colors ${scopeAll ? 'text-cyber-bg' : 'text-cyber-text'}`}
+                    className={`relative z-10 text-[11px] h-7 px-4 leading-none rounded-full transition-colors flex items-center ${scopeAll ? 'text-cyber-bg' : 'text-cyber-text'}`}
                     onClick={() => { if (!scopeAll) { setScopeAll(true); fetchQueueItems(true, true); } }}
                     title="查看全部账户"
                   >全部账户</button>
                   <span
-                    className={`absolute top-1 bottom-1 left-1 transition-all duration-200 rounded-full bg-cyber-accent ${scopeAll ? 'translate-x-[84px] w-[88px]' : 'translate-x-0 w-[88px]'}`}
+                    className={`absolute top-0.5 bottom-0.5 left-1 transition-all duration-200 rounded-full bg-cyber-accent ${scopeAll ? 'translate-x-[84px] w-[88px]' : 'translate-x-0 w-[88px]'}`}
                   />
                 </div>
               </div>
