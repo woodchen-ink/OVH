@@ -1376,10 +1376,9 @@ def process_queue():
 
     def compute_next_attempt(item):
         base = max(1, int(item.get("retryInterval", 30)))
-        failure = int(item.get("failureCount", 0))
-        interval = min(300.0, base * (2 ** min(failure, 6)))
         jitter = 0.8 + (0.4 * (time.time() % 1))
-        return time.time() + interval * jitter
+        interval = base * jitter
+        return time.time() + interval
 
     def execute_queue_item(item_id):
         nonlocal changes_since_last_save

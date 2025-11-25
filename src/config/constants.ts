@@ -9,7 +9,7 @@
  * 任务重试间隔（秒）
  * 前后端必须保持一致
  */
-export const TASK_RETRY_INTERVAL = 60;
+export const TASK_RETRY_INTERVAL = 30;
 
 /**
  * 任务重试间隔的最小值（秒）
