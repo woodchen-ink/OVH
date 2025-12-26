@@ -122,6 +122,7 @@ const ServersPage = () => {
     price?: {
       withTax?: number;
       withoutTax?: number;
+      tax?: number;
       currencyCode?: string;
     };
     error?: string;
@@ -937,6 +938,7 @@ const ServersPage = () => {
         const priceInfo = {
           withTax: response.data.price.prices?.withTax,
           withoutTax: response.data.price.prices?.withoutTax,
+          tax: response.data.price.prices?.tax,
           currencyCode: response.data.price.prices?.currencyCode || 'EUR'
         };
         
@@ -2020,7 +2022,89 @@ const ServersPage = () => {
                       )}
                     </div>
                   </div>
-                  {/* 价格通过通知形式显示，不在页面直接显示 */}
+                  {/* 价格显示 - 显示第一个可用机房的价格 */}
+                  {(() => {
+                    if (!isAuthenticated) return null;
+
+                    // 获取第一个可用机房的价格
+                    const availabilityData = availability[server.planCode];
+                    let priceInfo = null;
+                    let datacenterCode = '';
+
+                    if (availabilityData) {
+                      const availableDCs = Object.entries(availabilityData)
+                        .filter(([_, status]) => status && status !== 'unavailable' && status !== 'unknown')
+                        .map(([dc, _]) => dc);
+
+                      if (availableDCs.length > 0) {
+                        datacenterCode = availableDCs[0];
+                        priceInfo = serverPrices[server.planCode]?.[datacenterCode];
+                      }
+                    }
+
+                    // 如果没有可用性数据，尝试从已存在的价格数据中取第一个
+                    if (!priceInfo && serverPrices[server.planCode]) {
+                      const firstDC = Object.keys(serverPrices[server.planCode])[0];
+                      if (firstDC) {
+                        priceInfo = serverPrices[server.planCode][firstDC];
+                        datacenterCode = firstDC;
+                      }
+                    }
+
+                    if (!priceInfo) return null;
+
+                    if (priceInfo.loading) {
+                      return (
+                        <div className="mt-1 flex items-center gap-1.5 text-[10px] text-cyber-muted">
+                          <Loader2 size={10} className="animate-spin" />
+                          <span>获取价格中{datacenterCode ? ` (${datacenterCode.toUpperCase()})` : ''}...</span>
+                        </div>
+                      );
+                    }
+
+                    if (priceInfo.error) {
+                      return (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="mt-1 text-[10px] text-yellow-400 cursor-help">
+                              {priceInfo.error}{datacenterCode ? ` (${datacenterCode.toUpperCase()})` : ''}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>价格获取失败，可能该配置在所选数据中心不可用</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    }
+
+                    if (priceInfo.price?.withTax) {
+                      const currencySymbol = priceInfo.price.currencyCode === 'EUR' ? '€' :
+                                           priceInfo.price.currencyCode === 'USD' ? '$' :
+                                           priceInfo.price.currencyCode || '€';
+                      // 使用接口返回的 tax 字段
+                      const taxAmount = priceInfo.price.tax;
+                      return (
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <div className="flex items-center gap-1 px-2 py-0.5 bg-green-500/20 border border-green-500/30 rounded text-[10px]">
+                            {priceInfo.price.currencyCode === 'EUR' ? <Euro size={10} className="text-green-400" /> :
+                             priceInfo.price.currencyCode === 'USD' ? <DollarSign size={10} className="text-green-400" /> : null}
+                            <span className="font-bold text-green-400">
+                              {currencySymbol}{priceInfo.price.withTax.toFixed(2)}
+                            </span>
+                            {taxAmount !== undefined && taxAmount > 0 && (
+                              <span className="text-cyber-muted text-[8px]">(税:{currencySymbol}{taxAmount.toFixed(2)})</span>
+                            )}
+                            <span className="text-cyber-muted text-[9px]">/月</span>
+                            {datacenterCode && (
+                              <span className="text-cyber-muted text-[8px] ml-0.5">({datacenterCode.toUpperCase()})</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return null;
+                  })()}
                 </CardHeader>
                 
                 <CardContent className="p-4 sm:p-5">
@@ -2382,17 +2466,22 @@ const ServersPage = () => {
                         }
                         
                         if (priceInfo.price?.withTax) {
-                          const currencySymbol = priceInfo.price.currencyCode === 'EUR' ? '€' : 
-                                               priceInfo.price.currencyCode === 'USD' ? '$' : 
+                          const currencySymbol = priceInfo.price.currencyCode === 'EUR' ? '€' :
+                                               priceInfo.price.currencyCode === 'USD' ? '$' :
                                                priceInfo.price.currencyCode || '€';
+                          // 使用接口返回的 tax 字段
+                          const taxAmount = priceInfo.price.tax;
                           return (
                             <div className="mt-1.5 flex items-center gap-1.5">
                               <div className="flex items-center gap-1 px-2 py-0.5 bg-green-500/20 border border-green-500/30 rounded text-[10px]">
-                                {priceInfo.price.currencyCode === 'EUR' ? <Euro size={10} className="text-green-400" /> : 
+                                {priceInfo.price.currencyCode === 'EUR' ? <Euro size={10} className="text-green-400" /> :
                                  priceInfo.price.currencyCode === 'USD' ? <DollarSign size={10} className="text-green-400" /> : null}
                                 <span className="font-bold text-green-400">
                                   {currencySymbol}{priceInfo.price.withTax.toFixed(2)}
                                 </span>
+                                {taxAmount !== undefined && taxAmount > 0 && (
+                                  <span className="text-cyber-muted text-[8px]">(税:{currencySymbol}{taxAmount.toFixed(2)})</span>
+                                )}
                                 <span className="text-cyber-muted text-[9px]">/月</span>
                                 {datacenterCode && (
                                   <span className="text-cyber-muted text-[8px] ml-0.5">({datacenterCode.toUpperCase()})</span>
